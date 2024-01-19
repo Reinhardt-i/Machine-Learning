@@ -1,0 +1,170 @@
+---
+title: "Problem 2 solution"
+author: Abrar Masud Nafiz
+date: "January 19, 2024"
+output: html_notebook
+---
+
+<!-- This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook.  -->
+<!-- - Execute this chunk by placing your cursor inside it and pressing *Cmd+Shift+Enter*.  -->
+<!-- - Add a new chunk by pressing *Cmd+Option+I*. -->
+<!-- - When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).  -->
+
+
+### Install and load necessary packages:
+
+```{r}
+
+install.packages("dplyr")
+install.packages("caTools")
+install.packages("caret")
+install.packages("ggplot2")
+
+library(dplyr)
+library(caTools)
+library(caret)
+library(ggplot2)
+
+```
+
+
+### Loading and Exploring the dataset:
+
+```{r}
+
+data <- read.csv("bank-full.csv", sep = ";")
+str(data)
+print("---------------------------------------------------------------------------------------------------------------")
+summary(data)
+
+```
+
+
+### Data Preprocessing:
+
+```{r}
+# Convert categorical variables to factors
+data$job <- as.factor(data$job)
+data$marital <- as.factor(data$marital)
+data$education <- as.factor(data$education)
+data$default <- as.factor(data$default)
+data$housing <- as.factor(data$housing)
+data$loan <- as.factor(data$loan)
+data$contact <- as.factor(data$contact)
+data$month <- as.factor(data$month)
+data$poutcome <- as.factor(data$poutcome)
+data$y <- as.factor(data$y)
+
+# Check for missing values
+sum(is.na(data))
+
+```
+
+
+### Spliting the data into training and testing sets:
+
+```{r}
+
+set.seed(123)
+
+split <- sample.split(data$y, SplitRatio = 0.8)
+train_data <- subset(data, split == TRUE)
+test_data <- subset(data, split == FALSE)
+
+```
+
+
+### The Logistic Regression model - 
+
+```{r}
+
+log_model <- glm(y ~ ., data = train_data, family = "binomial")
+summary(log_model)
+
+```
+
+### Make predictions on the test set:
+
+```{r}
+
+predictions <- predict(log_model, newdata = test_data, type = "response")
+predicted_class <- ifelse(predictions > 0.5, "yes", "no")
+
+```
+
+
+### Evaluating the model
+
+```{r}
+
+print("Confusion Matrix -")
+conf_matrix <- table(test_data$y, predicted_class)
+conf_matrix
+
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+print("Accuracy - ")
+accuracy
+
+```
+
+### Some further analysis -
+
+```{r}
+
+# Confusion matrix values
+tp <- 355
+tn <- 7810
+fp <- 174
+fn <- 703
+
+precision <- tp / (tp + fp)
+recall <- tp / (tp + fn)
+f1_score <- 2 * (precision * recall) / (precision + recall)
+
+cat("Precision:", precision, "\n")
+cat("Recall (Sensitivity):", recall, "\n")
+cat("F1 Score:", f1_score, "\n")
+
+```
+
+
+### Heatmap of the confusion matrix - 
+
+```{r}
+
+ggplot(data, aes(x = y, fill = y)) +
+  geom_bar() +
+  labs(title = "Distribution of Target Variable 'y'",
+       x = "y (Term Deposit Subscription)",
+       y = "Count")
+
+conf_matrix <- matrix(c(7810, 174, 703, 355), nrow = 2, byrow = TRUE)
+colnames(conf_matrix) <- c("Predicted No", "Predicted Yes")
+rownames(conf_matrix) <- c("Actual No", "Actual Yes")
+
+conf_df <- as.data.frame(as.table(conf_matrix))
+
+# Heatmap of the confusion matrix -
+ggplot(conf_df, aes(x = Var1, y = Var2, fill = Freq)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%d", Freq)), vjust = 1) +
+  labs(title = "Confusion Matrix",
+       x = "Predicted",
+       y = "Actual",
+       fill = "Frequency")
+
+
+```
+
+
+### Interpretation:
+- The model has a high accuracy(~90%), indicating that it correctly predicts the class in the majority of cases.
+- Precision is 0.6710775 means that when the model predicts that a customer subscribes to a term deposit, it is correct around 67.1% of the time.
+- Recall is 0.3355388, it means that the model identifies around 33.6% of the customers who actually subscribed to a term deposit.
+- The F1 Score is approximately 44.7%, suggesting a reasonable balance between precision and recall.
+
+
+
+
+
+
