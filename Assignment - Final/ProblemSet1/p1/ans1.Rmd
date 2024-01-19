@@ -1,0 +1,173 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+### Installing and Loading packages
+```{r}
+
+install.packages(c("keras", "tidyverse", "jpeg", "tools"))
+
+library(keras)
+library(tidyverse)
+set.seed(42)  # for reproducibility
+
+```
+
+
+### initial setup
+
+```{r}
+train_path <- "data/train"
+val_path <- "data/val"
+test_path <- "data/test"
+
+img_width <- 150
+img_height <- 150
+```
+
+
+### Defining and Compiling the model
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu", input_shape = c(img_width, img_height, 3)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = "relu") %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_flatten() %>%
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_rmsprop(lr = 0.0001),
+  metrics = c("accuracy")
+)
+```
+
+
+### Data preprocessing
+
+```{r}
+
+datagen <- image_data_generator(rescale = 1/255)
+
+train_generator <- flow_images_from_directory(
+  train_path,
+  generator = datagen,
+  target_size = c(img_width, img_height),
+  class_mode = "binary",
+  batch_size = 20
+)
+
+validation_generator <- flow_images_from_directory(
+  val_path,
+  generator = datagen,
+  target_size = c(img_width, img_height),
+  class_mode = "binary",
+  batch_size = 20
+)
+
+```
+
+
+### Training the model
+
+```{r}
+
+history <- model %>% fit_generator(
+  train_generator,
+  steps_per_epoch = 100,
+  epochs = 30,
+  validation_data = validation_generator,
+  validation_steps = 50
+)
+
+```
+
+
+### Evaluate the model on the test set
+```{r}
+
+test_generator <- flow_images_from_directory(
+  test_path,
+  generator = datagen,
+  target_size = c(img_width, img_height),
+  class_mode = "binary",
+  batch_size = 1
+)
+
+model %>% evaluate_generator(test_generator, steps = 624)
+
+```
+
+
+# Save the model
+
+```{r}
+save_model_hdf5(model, "lung_classification_model.h5")
+```
+
+### Some Manual Testing -
+
+```{r}
+
+loaded_model <- load_model_hdf5("lung_classification_model.h5")
+folder_path <- "manual_test"
+image_files <- list.files(folder_path, pattern = "jpg|jpeg|png", full.names = TRUE)
+
+# Function to preprocess and predict on an image
+predict_image <- function(image_path, model) {
+  image <- image_load(image_path, target_size = c(img_width, img_height))
+  image <- image_to_array(image)
+  image <- array_reshape(image, c(1, dim(image)))
+  image <- image / 255  # Normalize pixel values
+  prediction <- predict(model, image)
+  return(prediction)
+}
+
+# Make predictions on each image in the folder
+predictions <- lapply(image_files, function(file) predict_image(file, loaded_model))
+
+results <- data.frame(
+  Image = image_files,
+  Prediction = unlist(predictions)
+)
+print(results)
+
+
+```
+
+
+### Plotting
+
+```{r}
+
+# Plot training and validation accuracy
+plot(history$metrics$accuracy, type = "l", col = "blue", ylab = "Accuracy", xlab = "Epoch", main = "Training and Validation Accuracy")
+lines(history$metrics$val_accuracy, col = "red")
+legend("topright", legend = c("Training", "Validation"), col = c("blue", "red"), lty = 1)
+
+# Save the plot as an image file
+dev.copy(png, "accuracy_plot.png")
+dev.off()
+
+# Plot training and validation loss
+plot(history$metrics$loss, type = "l", col = "blue", ylab = "Loss", xlab = "Epoch", main = "Training and Validation Loss")
+lines(history$metrics$val_loss, col = "red")
+legend("topright", legend = c("Training", "Validation"), col = c("blue", "red"), lty = 1)
+
+# Save the plot as an image file
+dev.copy(png, "loss_plot.png")
+dev.off()
+
+
+```
+
+
+
