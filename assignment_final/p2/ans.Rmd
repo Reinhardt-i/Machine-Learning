@@ -1,15 +1,9 @@
 ---
 title: "Problem 2 solution"
-author: Abrar Masud Nafiz
+author: "Abrar Masud Nafiz"
 date: "January 19, 2024"
 output: html_notebook
 ---
-
-<!-- This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook.  -->
-<!-- - Execute this chunk by placing your cursor inside it and pressing *Cmd+Shift+Enter*.  -->
-<!-- - Add a new chunk by pressing *Cmd+Option+I*. -->
-<!-- - When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).  -->
-
 
 ### Install and load necessary packages:
 
@@ -83,6 +77,7 @@ summary(log_model)
 
 ```
 
+
 ### Make predictions on the test set:
 
 ```{r}
@@ -106,6 +101,7 @@ print("Accuracy - ")
 accuracy
 
 ```
+
 
 ### Some further analysis -
 
