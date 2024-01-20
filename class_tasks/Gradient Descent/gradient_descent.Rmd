@@ -1,0 +1,161 @@
+---
+title: "Gradient Descent"
+output: html_notebook
+---
+
+### Install and Load Libraries
+
+```{r}
+
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  install.packages("ggplot2")
+}
+
+library(ggplot2)
+
+```
+
+
+### Generate and plot some random data
+
+```{r}
+
+set.seed(123) # for reproducibility
+
+# random data for a linear relationship
+x <- 1:100
+y <- 3 * x + rnorm(100, mean = 0, sd = 10)
+
+ggplot(data = data.frame(x, y), aes(x = x, y = y)) +
+  geom_point() +
+  labs(title = "Generated Data for Linear Regression", x = "X", y = "Y")
+
+```
+
+
+### MSE and Gradient Descent :
+
+```{r}
+
+# Mean squared error (MSE) func - 
+compute_mse <- function(y_true, y_pred) {
+  mean((y_true - y_pred)^2)
+}
+
+
+# Performs gradient descent for linear regression
+gradient_descent <- function(x, y, learning_rate, epochs) {
+
+  intercept <- 0
+  slope <- 0
+  mse_history <- numeric(epochs)
+  
+  for (epoch in 1:epochs) {
+    y_pred <- intercept + slope * x
+    
+    # Compute gradients
+    d_intercept <- -2 * mean(y - y_pred)
+    d_slope <- -2 * mean((y - y_pred) * x)
+    
+    # Update parameters
+    intercept <- intercept - learning_rate * d_intercept
+    slope <- slope - learning_rate * d_slope
+    
+    # Compute MSE and store in history
+    mse_history[epoch] <- compute_mse(y, y_pred)
+    
+    # Check for convergence
+    if (epoch > 1 && abs(mse_history[epoch] - mse_history[epoch - 1]) < 1e-6) {
+      break
+    }
+  }
+  
+  return(list(intercept = intercept, slope = slope, mse_history = mse_history[1:epoch]))
+}
+
+
+```
+
+
+### Setting up Hyper-parameters and performing gd - 
+
+```{r}
+
+learning_rate <- 0.0001
+epochs <- 1000
+
+result <- gradient_descent(x, y, learning_rate, epochs)
+# print(result)
+
+```
+
+### Check MSE decreasing -
+
+```{r}
+
+predict_linear_regression <- function(intercept, slope, x) {
+  return(intercept + slope * x)
+}
+
+intercept <- 0.02540524
+slope <- 3.019298
+alpha <- 0.00001
+n <- length(x)
+
+mse_history <- numeric(1000)
+
+# Run gradient descent for more iterations
+for (i in 1:1000) {
+
+  predictions <- predict_linear_regression(intercept, slope, x)
+  errors <- predictions - y
+  
+  # Update intercept and slope
+  intercept <- intercept - alpha * (2/n) * sum(errors)
+  slope <- slope - alpha * (2/n) * sum(errors * x)
+  
+  # Check for overflow or underflow in intercept and slope
+  if (!is.finite(intercept) | !is.finite(slope)) {
+    cat("Divergence occurred. Adjust learning rate or check for issues.\n")
+    break
+  }
+  
+  mse <- mean(errors^2)
+  mse_history[i] <- mse
+  
+  # Print intermediate results
+  if (i %% 100 == 0) {
+    cat("Iteration:", i, "  MSE:", mse, "\n")
+  }
+}
+
+# Print final results
+cat("Final Intercept:", intercept, "\n")
+cat("Final Slope:", slope, "\n")
+
+
+
+```
+
+
+### Plotting 
+
+```{r}
+
+# Regression line along with the data
+ggplot(data = data.frame(x, y), aes(x = x, y = y)) +
+  geom_point() +
+  geom_line(aes(y = result$intercept + result$slope * x), color = "red") +
+  labs(title = "Linear Regression with Gradient Descent", x = "X", y = "Y")
+
+
+# For visualizing MSE over time - 
+iterations <- seq(1, length(mse_history))
+plot(iterations, mse_history, type = "l", col = "blue", xlab = "Iterations", ylab = "Mean Squared Error", main = "Convergence Plot")
+abline(h = min(mse_history), col = "red", lty = 2)  # Highlight the minimum MSE point
+text(100, min(mse_history), "Minimum MSE", pos = 4, col = "red")
+grid()
+
+```
+
+

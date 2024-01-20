@@ -1,0 +1,161 @@
+---
+title: "Logictic Regression vs Decision Trees"
+output: html_notebook
+---
+
+
+### Packages :
+
+```{r}
+
+# install.packages("caret")
+# install.packages("MASS")
+# install.packages("pROC")
+#install.packages("rpart.plot")
+library(caret)
+library(MASS)
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(ggplot2)
+library(pROC)
+
+```
+
+
+### Generate Synthetic data
+```{r}
+
+set.seed(123)
+synthetic_data <- as.data.frame(mvrnorm(n = 500, mu = c(0, 0), Sigma = matrix(c(1, 0.5, 0.5, 1), nrow = 2)))
+colnames(synthetic_data) <- c("Feature1", "Feature2")
+
+# Create a binary response variable based on a linear combination of features
+synthetic_data$Response <- as.factor(ifelse(2 * synthetic_data$Feature1 - 3 * synthetic_data$Feature2 + rnorm(500) > 0, 1, 0))
+
+head(synthetic_data)
+
+```
+
+
+### Splitting the data into training and testing sets -
+
+```{r}
+
+set.seed(456)
+splitIndex <- createDataPartition(synthetic_data$Response, p = 0.7, list = FALSE)
+train_data <- synthetic_data[splitIndex, ]
+test_data <- synthetic_data[-splitIndex, ]
+
+```
+
+
+
+### Logistic Regression :
+
+```{r}
+
+# Training
+logistic_model <- glm(Response ~ Feature1 + Feature2, data = train_data, family = "binomial")
+
+# Make predictions on the test set
+logistic_pred <- predict(logistic_model, newdata = test_data, type = "response")
+
+# Convert predicted probabilities to class labels
+logistic_pred_class <- factor(ifelse(logistic_pred > 0.5, 1, 0), levels = levels(test_data$Response))
+
+# Ensure both training and testing datasets have the same levels for the response variable
+levels(train_data$Response) <- levels(test_data$Response)
+
+# Evaluate the Logistic Regression model
+confusion_matrix_logistic <- confusionMatrix(logistic_pred_class, test_data$Response)
+confusion_matrix_logistic
+
+```
+
+
+### Decision Tree:
+
+```{r}
+
+# Training
+tree_model <- rpart(Response ~ Feature1 + Feature2, data = train_data, method = "class")
+
+# Predictions on the test set
+tree_pred <- predict(tree_model, newdata = test_data, type = "class")
+
+# Ensure both training and testing datasets have the same levels for the response variable
+levels(train_data$Response) <- levels(test_data$Response)
+
+# Evaluate the Decision Tree model
+confusion_matrix_tree <- confusionMatrix(tree_pred, test_data$Response)
+confusion_matrix_tree
+
+```
+
+
+### Compare Logistic Regression and Decision Tree models
+
+```{r}
+
+comparison_table <- data.frame(
+  Model = c("Logistic Regression", "Decision Tree"),
+  Accuracy = numeric(2),
+  Sensitivity = numeric(2),
+  Specificity = numeric(2),
+  AUC = numeric(2)
+)
+
+# Logistic Regression
+confusion_matrix_logistic <- confusionMatrix(logistic_pred_class, test_data$Response)
+comparison_table[1, c("Accuracy", "Sensitivity", "Specificity", "AUC")] <- c(
+  confusion_matrix_logistic$overall["Accuracy"],
+  confusion_matrix_logistic$byClass["Sensitivity"],
+  confusion_matrix_logistic$byClass["Specificity"],
+  roc(test_data$Response, logistic_pred)$auc
+)
+
+# Decision Tree
+confusion_matrix_tree <- confusionMatrix(tree_pred, test_data$Response)
+comparison_table[2, c("Accuracy", "Sensitivity", "Specificity", "AUC")] <- c(
+  confusion_matrix_tree$overall["Accuracy"],
+  confusion_matrix_tree$byClass["Sensitivity"],
+  confusion_matrix_tree$byClass["Specificity"],
+  roc(test_data$Response, as.numeric(tree_pred))$auc
+)
+
+# Print the comparison table
+print(comparison_table)
+
+```
+
+
+### Plots -
+
+```{r}
+
+# ROC curve for Logistic Regression
+roc_curve_logistic <- roc(test_data$Response, logistic_pred)
+plot(roc_curve_logistic, main = "ROC Curve - Logistic Regression", col = "blue", lwd = 2)
+
+# Plot Decision Tree
+prp(tree_model, main = "Decision Tree", varlen = 0, faclen = 0)
+
+# Combine ROC curves for Logistic Regression and Decision Tree
+plot(roc_curve_logistic, col = "blue", lwd = 2, main = "ROC Curve Comparison")
+lines(roc_curve_tree, col = "green", lwd = 2)
+legend("bottomright", legend = c("Logistic Regression", "Decision Tree"), col = c("blue", "green"), lwd = 2)
+
+```
+
+
+```{r}
+
+# Create ROC curve for Decision Tree
+roc_curve_tree <- roc(test_data$Response, as.numeric(tree_pred))
+
+
+
+```
+
+

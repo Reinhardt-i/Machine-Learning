@@ -62,7 +62,8 @@ train_generator <- flow_images_from_directory(
   generator = datagen,
   target_size = c(img_width, img_height),
   class_mode = "binary",
-  batch_size = 20
+  batch_size = 20,
+  shuffle = TRUE
 )
 
 validation_generator <- flow_images_from_directory(
@@ -70,8 +71,10 @@ validation_generator <- flow_images_from_directory(
   generator = datagen,
   target_size = c(img_width, img_height),
   class_mode = "binary",
-  batch_size = 20
+  batch_size = 20,
+  shuffle = FALSE
 )
+
 
 ```
 
