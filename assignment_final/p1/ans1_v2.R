@@ -1,14 +1,12 @@
 # Install required packages
 # install.packages(c("keras", "tidyverse", "jpeg", "tools"))
 
-# Load required libraries
+
 library(keras)
 library(tidyverse)
 
-# Set the seed for reproducibility
 set.seed(123)
-
-# Define the paths to your data folders
+# Paths to your data folders
 train_path <- "data/train"
 val_path <- "data/val"
 test_path <- "data/test"
@@ -80,17 +78,14 @@ model %>% evaluate_generator(test_generator, steps = 624)
 save_model_hdf5(model, "lung_classification_model2.h5")
 
 
-
-
-
 # Plot training and validation accuracy
 plot(history$metrics$accuracy, type = "l", col = "blue", ylab = "Accuracy", xlab = "Epoch", main = "Training and Validation Accuracy")
 lines(history$metrics$val_accuracy, col = "red")
 legend("topright", legend = c("Training", "Validation"), col = c("blue", "red"), lty = 1)
 
 # Save the plot as an image file
-dev.copy(png, "accuracy_plot.png")
-dev.off()
+# dev.copy(png, "accuracy_plot.png")
+# dev.off()
 
 # Plot training and validation loss
 plot(history$metrics$loss, type = "l", col = "blue", ylab = "Loss", xlab = "Epoch", main = "Training and Validation Loss")
@@ -98,6 +93,6 @@ lines(history$metrics$val_loss, col = "red")
 legend("topright", legend = c("Training", "Validation"), col = c("blue", "red"), lty = 1)
 
 # Save the plot as an image file
-dev.copy(png, "loss_plot.png")
-dev.off()
+# dev.copy(png, "loss_plot.png")
+# dev.off()
 

@@ -11,7 +11,7 @@ install.packages(c("keras", "tidyverse", "jpeg", "tools"))
 
 library(keras)
 library(tidyverse)
-set.seed(42)  # for reproducibility
+set.seed(4213)  # for reproducibility
 
 ```
 
