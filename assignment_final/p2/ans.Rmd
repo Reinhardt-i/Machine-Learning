@@ -9,10 +9,10 @@ output: html_notebook
 
 ```{r}
 
-install.packages("dplyr")
-install.packages("caTools")
-install.packages("caret")
-install.packages("ggplot2")
+# install.packages("dplyr")
+# install.packages("caTools")
+# install.packages("caret")
+# install.packages("ggplot2")
 
 library(dplyr)
 library(caTools)
@@ -83,7 +83,7 @@ summary(log_model)
 ```{r}
 
 predictions <- predict(log_model, newdata = test_data, type = "response")
-predicted_class <- ifelse(predictions > 0.5, "yes", "no")
+predicted_class <- ifelse(predictions > 0.505, "yes", "no")
 
 ```
 
